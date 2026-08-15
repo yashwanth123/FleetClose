@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "description": "Turn telematics alerts into closed work for mid-market trucking fleets.",
+  "homepage": "https://yashwanth123.github.io/FleetClose/",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "npx --yes serve@14.2.4 out -l 3000",
     "lint": "next lint"
   },
   "dependencies": {
-    "lucide-react": "^0.525.0",
     "next": "^15.4.6",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"

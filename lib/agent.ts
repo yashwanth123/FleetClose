@@ -277,14 +277,14 @@ export function applyDecision(state: DemoState, alert: Alert, now = new Date().t
 
 export function runAgent(state: DemoState, now = new Date().toISOString()): DemoState {
   const open = state.alerts.filter((alert) => alert.status === "open");
-  let next = {
+  let next: DemoState = {
     ...state,
     lastAgentRunAt: now,
     audit: [
       {
         id: makeId("aud"),
         at: now,
-        actor: "agent" as const,
+        actor: "agent",
         type: "agent.run",
         message: `Agent run started · ${open.length} open alerts.`,
       },

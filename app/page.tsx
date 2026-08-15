@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Wordmark } from "@/components/brand";
+import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 
 const steps = [
   {
@@ -41,28 +41,7 @@ const out = [
 export default function MarketingPage() {
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-paper/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <Wordmark />
-          <nav className="hidden items-center gap-7 text-sm text-ink/70 md:flex">
-            <a href="#problem" className="hover:text-ink">
-              Problem
-            </a>
-            <a href="#how" className="hover:text-ink">
-              How it works
-            </a>
-            <a href="#pilot" className="hover:text-ink">
-              Pilot
-            </a>
-            <Link href="/dashboard" className="rounded-full bg-navy px-4 py-2 text-paper hover:bg-navy-2">
-              Live ops demo
-            </Link>
-          </nav>
-          <Link href="/dashboard" className="rounded-full bg-navy px-4 py-2 text-sm text-paper md:hidden">
-            Demo
-          </Link>
-        </div>
-      </header>
+      <SiteHeader />
 
       <section className="relative overflow-hidden bg-navy text-paper">
         <div className="grid-fade pointer-events-none absolute inset-0 opacity-70" />
@@ -78,14 +57,17 @@ export default function MarketingPage() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
-                href="/dashboard"
+                href="/dashboard/"
                 className="rounded-full bg-amber px-5 py-3 text-sm font-semibold text-navy hover:bg-amber-2"
               >
                 Run the 5-minute demo
               </Link>
-              <a href="#pilot" className="rounded-full border border-paper/20 px-5 py-3 text-sm text-paper hover:bg-paper/5">
-                $3,500 / 30-day pilot
-              </a>
+              <Link
+                href="/pilot/"
+                className="rounded-full border border-paper/20 px-5 py-3 text-sm text-paper hover:bg-paper/5"
+              >
+                Book the $3,500 pilot
+              </Link>
             </div>
             <p className="mt-6 text-sm text-paper/50">Then ~$12 per truck / month. No enterprise rollout required.</p>
           </div>
@@ -114,7 +96,7 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      <section id="problem" className="mx-auto max-w-6xl px-5 py-20">
+      <section id="problem" className="scroll-mt-24 mx-auto max-w-6xl px-5 py-20">
         <p className="mono text-[12px] uppercase tracking-[0.22em] text-amber">The gap</p>
         <h2 className="display mt-3 max-w-3xl text-3xl md:text-5xl">
           Trucks already send alerts. Action happens hours later.
@@ -123,7 +105,7 @@ export default function MarketingPage() {
           {[
             { title: "Alerts sit", body: "Samsara, Geotab, ELD, and shop notes pile up. Nobody owns the next step." },
             { title: "Humans copy", body: "Someone pastes into a ticket, Slack, or a spreadsheet — if they see it at all." },
-            { title: "Loads slip", body: "Downtime, missed appointments, and overtime show up before the work order does." },
+            { title: "Loads slip", body: "Downtime, missed appointments, and overtime show up before the next work order does." },
           ].map((item) => (
             <article key={item.title} className="rounded-2xl border border-[var(--line)] bg-paper-2 p-6">
               <h3 className="text-lg font-semibold">{item.title}</h3>
@@ -133,7 +115,7 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      <section id="how" className="bg-navy text-paper">
+      <section id="how" className="scroll-mt-24 bg-navy text-paper">
         <div className="mx-auto max-w-6xl px-5 py-20">
           <p className="mono text-[12px] uppercase tracking-[0.22em] text-amber-2">How FleetClose works</p>
           <h2 className="display mt-3 max-w-3xl text-3xl md:text-5xl">Alert → decide → work order → prove it.</h2>
@@ -146,10 +128,16 @@ export default function MarketingPage() {
               </article>
             ))}
           </div>
+          <Link
+            href="/dashboard/"
+            className="mt-10 inline-flex rounded-full bg-amber px-5 py-3 text-sm font-semibold text-navy hover:bg-amber-2"
+          >
+            See the agent close work
+          </Link>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-5 py-20">
+      <section id="who" className="scroll-mt-24 mx-auto max-w-6xl px-5 py-20">
         <p className="mono text-[12px] uppercase tracking-[0.22em] text-amber">Who it&apos;s for</p>
         <h2 className="display mt-3 text-3xl md:text-5xl">Built for the manager who gets the 2 a.m. call.</h2>
         <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -162,7 +150,7 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      <section id="pilot" className="border-y border-[var(--line)] bg-paper-2">
+      <section id="pilot" className="scroll-mt-24 border-y border-[var(--line)] bg-paper-2">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 md:grid-cols-2">
           <div>
             <p className="mono text-[12px] uppercase tracking-[0.22em] text-amber">Pilot offer</p>
@@ -186,12 +174,20 @@ export default function MarketingPage() {
               Example: 180 trucks ≈ $2,160 / month — less than one missed reefer load or a single after-hours breakdown
               on I-80.
             </p>
-            <Link
-              href="/dashboard"
-              className="mt-8 inline-flex rounded-full bg-amber px-5 py-3 text-sm font-semibold text-navy hover:bg-amber-2"
-            >
-              See it close work
-            </Link>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/pilot/"
+                className="inline-flex rounded-full bg-amber px-5 py-3 text-sm font-semibold text-navy hover:bg-amber-2"
+              >
+                Request the pilot
+              </Link>
+              <Link
+                href="/dashboard/"
+                className="inline-flex rounded-full border border-paper/20 px-5 py-3 text-sm text-paper"
+              >
+                Watch the demo first
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -221,21 +217,24 @@ export default function MarketingPage() {
           <p className="mx-auto mt-4 max-w-xl text-paper/70">
             Open the live ops console, hit Run agent, approve the unsafe cases, and show the ROI strip.
           </p>
-          <Link
-            href="/dashboard"
-            className="mt-8 inline-flex rounded-full bg-amber px-6 py-3 text-sm font-semibold text-navy hover:bg-amber-2"
-          >
-            Open Heartland Freight demo
-          </Link>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/dashboard/"
+              className="inline-flex rounded-full bg-amber px-6 py-3 text-sm font-semibold text-navy hover:bg-amber-2"
+            >
+              Open Heartland Freight demo
+            </Link>
+            <Link
+              href="/pilot/"
+              className="inline-flex rounded-full border border-paper/20 px-6 py-3 text-sm text-paper"
+            >
+              Book a 30-day pilot
+            </Link>
+          </div>
         </div>
       </section>
 
-      <footer className="border-t border-[var(--line)]">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-8 text-sm text-ink/55 md:flex-row md:items-center md:justify-between">
-          <Wordmark />
-          <p>Turn alerts into closed work. Mid-market trucking, not a control-tower science project.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
