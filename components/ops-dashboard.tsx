@@ -31,7 +31,7 @@ function truckStatusClass(status: string) {
 export function OpsDashboard() {
   const [state, setState] = useState<DemoState>(() => createSeedState());
   const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState("");
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
 
   const metrics = useMemo(() => computeRoi(state), [state]);
@@ -56,12 +56,16 @@ export function OpsDashboard() {
     const next = createSeedState();
     setState(next);
     setSelectedAlertId(next.alerts[0]?.id ?? null);
-    setNote("");
+    setNotes({});
   }
 
   function handleResolve(escalation: Escalation, action: "approved" | "rejected") {
-    setState((current) => resolveEscalation(current, escalation.id, action, note));
-    setNote("");
+    setState((current) => resolveEscalation(current, escalation.id, action, notes[escalation.id]));
+    setNotes((current) => {
+      const next = { ...current };
+      delete next[escalation.id];
+      return next;
+    });
   }
 
   return (
@@ -216,8 +220,10 @@ export function OpsDashboard() {
                       </div>
                       <p className="mt-3 text-sm leading-relaxed text-paper/80">{escalation.recommendedPlan}</p>
                       <textarea
-                        value={note}
-                        onChange={(event) => setNote(event.target.value)}
+                        value={notes[escalation.id] ?? ""}
+                        onChange={(event) =>
+                          setNotes((current) => ({ ...current, [escalation.id]: event.target.value }))
+                        }
                         placeholder="Optional manager note"
                         className="mt-3 w-full rounded-lg border border-paper/10 bg-[#071421] px-3 py-2 text-sm outline-none focus:border-amber"
                         rows={2}
