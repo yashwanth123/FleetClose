@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { resolveEscalation, runAgent } from "@/lib/agent";
 import { Wordmark } from "@/components/brand";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/lib/metrics";
 import { DEMO_FLEET, DEMO_REGION, createSeedState, truckById } from "@/lib/seed";
 import { SEVERITY_LABEL, TRUCK_TYPE_LABEL, formatMoney, formatPct, formatRelative } from "@/lib/ids";
+import { clearDemoState, loadDemoState, saveDemoState } from "@/lib/storage";
 import type { Alert, DemoState, Escalation, Severity } from "@/lib/types";
 
 const severityClass: Record<Severity, string> = {
@@ -30,9 +31,19 @@ function truckStatusClass(status: string) {
 
 export function OpsDashboard() {
   const [state, setState] = useState<DemoState>(() => createSeedState());
+  const [hydrated, setHydrated] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState("");
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setState(loadDemoState());
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (hydrated) saveDemoState(state);
+  }, [hydrated, state]);
 
   const metrics = useMemo(() => computeRoi(state), [state]);
   const selectedAlert = state.alerts.find((alert) => alert.id === selectedAlertId) ?? state.alerts[0];
@@ -53,15 +64,20 @@ export function OpsDashboard() {
   }
 
   function handleReset() {
+    clearDemoState();
     const next = createSeedState();
     setState(next);
     setSelectedAlertId(next.alerts[0]?.id ?? null);
-    setNote("");
+    setNotes({});
   }
 
   function handleResolve(escalation: Escalation, action: "approved" | "rejected") {
-    setState((current) => resolveEscalation(current, escalation.id, action, note));
-    setNote("");
+    setState((current) => resolveEscalation(current, escalation.id, action, notes[escalation.id]));
+    setNotes((current) => {
+      const next = { ...current };
+      delete next[escalation.id];
+      return next;
+    });
   }
 
   return (
@@ -69,7 +85,7 @@ export function OpsDashboard() {
       <header className="sticky top-0 z-20 border-b border-paper/10 bg-[#071421]/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-4">
-            <Link href="/">
+            <Link href="/" aria-label="FleetClose home">
               <Wordmark tone="dark" />
             </Link>
             <div className="hidden h-8 w-px bg-paper/10 md:block" />
@@ -78,7 +94,13 @@ export function OpsDashboard() {
               <p className="mono text-[11px] text-paper/45">{DEMO_REGION}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/" className="rounded-full border border-paper/15 px-4 py-2 text-sm text-paper/80 hover:bg-paper/5">
+              Marketing
+            </Link>
+            <Link href="/pilot/" className="rounded-full border border-paper/15 px-4 py-2 text-sm text-paper/80 hover:bg-paper/5">
+              Book pilot
+            </Link>
             <button
               type="button"
               onClick={handleReset}
@@ -216,8 +238,10 @@ export function OpsDashboard() {
                       </div>
                       <p className="mt-3 text-sm leading-relaxed text-paper/80">{escalation.recommendedPlan}</p>
                       <textarea
-                        value={note}
-                        onChange={(event) => setNote(event.target.value)}
+                        value={notes[escalation.id] ?? ""}
+                        onChange={(event) =>
+                          setNotes((current) => ({ ...current, [escalation.id]: event.target.value }))
+                        }
                         placeholder="Optional manager note"
                         className="mt-3 w-full rounded-lg border border-paper/10 bg-[#071421] px-3 py-2 text-sm outline-none focus:border-amber"
                         rows={2}
