@@ -7,6 +7,7 @@ Turn the telematics you already pay for into closed work and a 2026 proof file â
 | Page | Job |
 | --- | --- |
 | `/` | 2026 marketing: cameras paid for, work not closed |
+| `/how/` | Plain-language backend + data you need from a fleet |
 | `/dashboard/` | Live ops demo + proof pack (insurance / CSA / shipper) |
 | `/playbook/` | Email, LinkedIn, call open, demo script, objections |
 | `/pilot/` | $3,500 / 30-day / 100-truck request |
@@ -17,6 +18,7 @@ The agent auto-closes routine PM, coaches camera/policy noise (no fake shop tick
 
 ```bash
 npm install
+npm test
 npm run dev
 ```
 

@@ -8,7 +8,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "npx --yes serve@14.2.4 out -l 3000",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "npx --yes tsx --test lib/agent.test.ts"
   },
   "dependencies": {
     "next": "^15.4.6",
