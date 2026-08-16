@@ -47,11 +47,29 @@ export default function HowPage() {
             <li>
               — <strong>Pilot form</strong> opens a prefilled email. It does not write to our servers.
             </li>
+            <li>
+              — <strong>Real public data</strong> on <a className="underline" href="/live/">/live</a>: the browser calls
+              data.transportation.gov (FMCSA census + SMS violations). No Samsara key. No scraping.
+            </li>
           </ul>
           <p className="mt-4 text-sm text-ink/60">
             We test those rules with <code className="mono">npm test</code> (20 alerts processed, 13 auto / 7 human, no
             shop ticket on camera coaching, crash parks the truck, phone clip does not).
           </p>
+        </section>
+
+        <section className="mt-12">
+          <h2 className="display text-3xl">What is public vs what needs a customer</h2>
+          <ul className="mt-4 space-y-2 text-sm text-ink/80">
+            <li>
+              — <strong>Public now:</strong> FMCSA company census and SMS violations (any USDOT). Example: Niece
+              Trucking, USDOT 638655, 194 trucks, Des Moines.
+            </li>
+            <li>
+              — <strong>Not public:</strong> Samsara, Motive, Geotab live GPS/camera feeds. Those need the fleet’s own
+              token or a vendor sandbox account.
+            </li>
+          </ul>
         </section>
 
         <section className="mt-12">

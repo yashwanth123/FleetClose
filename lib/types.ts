@@ -37,7 +37,7 @@ export type Alert = {
   detail: string;
   category: AlertCategory;
   severity: Severity;
-  source: "Samsara" | "Geotab" | "Motive" | "ELD" | "Shop";
+  source: "Samsara" | "Geotab" | "Motive" | "ELD" | "Shop" | "FMCSA";
   createdAt: string;
   status: AlertStatus;
 };
