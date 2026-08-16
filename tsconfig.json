@@ -17,5 +17,5 @@
     "paths": { "@/*": ["./*"] }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "lib/agent.test.ts", "lib/fmcsa-map.test.ts", "lib/repo.test.ts", "lib/csv-alerts.test.ts"]
 }

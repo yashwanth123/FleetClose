@@ -130,6 +130,24 @@ export default function PlaybookPage() {
             </div>
           </dl>
         </section>
+
+        <section className="mt-12">
+          <h2 className="display text-3xl">Ask for this data on the first call</h2>
+          <p className="mt-3 text-sm text-ink/70">
+            Full list lives on{" "}
+            <Link href="/how/#data" className="underline">
+              How it works
+            </Link>
+            . Minimum to start:
+          </p>
+          <ul className="mt-4 space-y-2 text-sm text-ink/80">
+            <li>— Truck count, mix, terminals</li>
+            <li>— Samsara / Motive / Geotab (which one)</li>
+            <li>— Last 2 weeks of alerts (CSV or export)</li>
+            <li>— Who parks a truck and who gets the shop ticket</li>
+            <li>— One number they care about (downtime, missed loads, or unanswered camera events)</li>
+          </ul>
+        </section>
       </main>
       <SiteFooter />
     </div>

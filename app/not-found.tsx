@@ -16,6 +16,9 @@ export default function NotFound() {
           <Link href="/dashboard/" className="rounded-full bg-amber px-5 py-3 text-sm font-semibold text-navy">
             Live ops demo
           </Link>
+          <Link href="/how/" className="rounded-full border border-[var(--line)] px-5 py-3 text-sm">
+            How it works
+          </Link>
           <Link href="/playbook/" className="rounded-full border border-[var(--line)] px-5 py-3 text-sm">
             Playbook
           </Link>

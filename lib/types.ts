@@ -10,7 +10,7 @@ export type AlertStatus =
   | "rejected";
 export type DecisionAction = "auto_work_order" | "escalate";
 export type WorkOrderPriority = "p3" | "p2" | "p1";
-export type WorkOrderStatus = "created" | "dispatched" | "cancelled";
+export type WorkOrderStatus = "created" | "dispatched" | "completed" | "cancelled";
 export type NotificationChannel = "sms" | "email" | "radio";
 export type EscalationStatus = "pending" | "approved" | "rejected";
 export type Actor = "agent" | "human";
@@ -37,7 +37,7 @@ export type Alert = {
   detail: string;
   category: AlertCategory;
   severity: Severity;
-  source: "Samsara" | "Geotab" | "Motive" | "ELD" | "Shop";
+  source: "Samsara" | "Geotab" | "Motive" | "ELD" | "Shop" | "FMCSA";
   createdAt: string;
   status: AlertStatus;
 };

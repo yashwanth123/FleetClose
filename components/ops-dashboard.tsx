@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { resolveEscalation, runAgent } from "@/lib/agent";
 import { Wordmark } from "@/components/brand";
+import { apiJson } from "@/lib/client-api";
 import {
   AGENT_MINUTES,
   BASELINE_HOURS,
@@ -14,8 +15,24 @@ import {
 import { DEMO_FLEET, DEMO_REGION, createSeedState, truckById } from "@/lib/seed";
 import { SEVERITY_LABEL, TRUCK_TYPE_LABEL, formatMoney, formatPct, formatRelative } from "@/lib/ids";
 import { buildProofPack } from "@/lib/proof";
-import { clearDemoState, loadDemoState, saveDemoState } from "@/lib/storage";
-import type { Alert, DemoState, Escalation, Severity } from "@/lib/types";
+import type { Alert, DemoState, Escalation, Severity, WorkOrderStatus } from "@/lib/types";
+
+type CarrierInfo = {
+  id: string;
+  usdot: string | null;
+  legal_name: string;
+  city: string | null;
+  state: string | null;
+  source: string;
+};
+
+const HEARTLAND_ID = "heartland";
+
+type OpsPayload = {
+  carrierId: string;
+  carrier: CarrierInfo | undefined;
+  state: DemoState;
+};
 
 const severityClass: Record<Severity, string> = {
   routine: "bg-paper/10 text-paper/80",
@@ -31,20 +48,34 @@ function truckStatusClass(status: string) {
 }
 
 export function OpsDashboard() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const carrierId = searchParams.get("carrier") || HEARTLAND_ID;
   const [state, setState] = useState<DemoState>(() => createSeedState());
-  const [hydrated, setHydrated] = useState(false);
+  const [carrier, setCarrier] = useState<CarrierInfo | undefined>();
+  const [carriers, setCarriers] = useState<CarrierInfo[]>([]);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
+  const [csvName, setCsvName] = useState("");
+
+  function applyPayload(payload: OpsPayload) {
+    setState(payload.state);
+    setCarrier(payload.carrier);
+  }
 
   useEffect(() => {
-    setState(loadDemoState());
-    setHydrated(true);
+    apiJson<{ carriers: CarrierInfo[] }>("/api/carriers")
+      .then((payload) => setCarriers(payload.carriers))
+      .catch((err: Error) => setError(err.message));
   }, []);
 
   useEffect(() => {
-    if (hydrated) saveDemoState(state);
-  }, [hydrated, state]);
+    apiJson<OpsPayload>(`/api/state?carrierId=${encodeURIComponent(carrierId)}`)
+      .then(applyPayload)
+      .catch((err: Error) => setError(err.message));
+  }, [carrierId]);
 
   const metrics = useMemo(() => computeRoi(state), [state]);
   const proof = useMemo(() => buildProofPack(state), [state]);
@@ -60,26 +91,99 @@ export function OpsDashboard() {
     const open = state.alerts.filter((alert) => alert.status === "open");
     if (open.length === 0) return;
     setBusy(true);
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    setState((current) => runAgent(current));
-    setBusy(false);
+    setError("");
+    try {
+      const payload = await apiJson<OpsPayload>("/api/agent/run", {
+        method: "POST",
+        body: JSON.stringify({ carrierId }),
+      });
+      applyPayload(payload);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Agent run failed");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function handleReset() {
-    clearDemoState();
-    const next = createSeedState();
-    setState(next);
-    setSelectedAlertId(next.alerts[0]?.id ?? null);
-    setNotes({});
+  async function handleReset() {
+    setBusy(true);
+    setError("");
+    try {
+      const payload = await apiJson<OpsPayload>("/api/demo/reset", { method: "POST" });
+      applyPayload(payload);
+      setSelectedAlertId(payload.state.alerts[0]?.id ?? null);
+      setNotes({});
+      router.replace("/dashboard/?carrier=heartland");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Reset failed");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function handleResolve(escalation: Escalation, action: "approved" | "rejected") {
-    setState((current) => resolveEscalation(current, escalation.id, action, notes[escalation.id]));
-    setNotes((current) => {
-      const next = { ...current };
-      delete next[escalation.id];
-      return next;
-    });
+  async function handleResolve(escalation: Escalation, action: "approved" | "rejected") {
+    setError("");
+    try {
+      const payload = await apiJson<OpsPayload>("/api/agent/resolve", {
+        method: "POST",
+        body: JSON.stringify({
+          carrierId,
+          escalationId: escalation.id,
+          action,
+          note: notes[escalation.id],
+        }),
+      });
+      applyPayload(payload);
+      setNotes((current) => {
+        const next = { ...current };
+        delete next[escalation.id];
+        return next;
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Resolve failed");
+    }
+  }
+
+  async function handleWorkOrder(workOrderId: string, status: WorkOrderStatus) {
+    setError("");
+    try {
+      const payload = await apiJson<OpsPayload>("/api/work-orders", {
+        method: "POST",
+        body: JSON.stringify({ carrierId, workOrderId, status }),
+      });
+      applyPayload(payload);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Work order update failed");
+    }
+  }
+
+  async function handleCsv(file: File, asNewFleet: boolean) {
+    setBusy(true);
+    setError("");
+    try {
+      const csv = await file.text();
+      const payload = await apiJson<OpsPayload>("/api/alerts/ingest", {
+        method: "POST",
+        body: JSON.stringify({
+          csv,
+          run: true,
+          ...(asNewFleet
+            ? { fleetName: csvName.trim() || file.name.replace(/\.csv$/i, "") }
+            : { carrierId }),
+        }),
+      });
+      applyPayload(payload);
+      setSelectedAlertId(payload.state.alerts[0]?.id ?? null);
+      const list = await apiJson<{ carriers: CarrierInfo[] }>("/api/carriers");
+      setCarriers(list.carriers);
+      if (payload.carrierId !== carrierId) {
+        router.replace(`/dashboard/?carrier=${encodeURIComponent(payload.carrierId)}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "CSV ingest failed");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -92,13 +196,43 @@ export function OpsDashboard() {
             </Link>
             <div className="hidden h-8 w-px bg-paper/10 md:block" />
             <div className="hidden md:block">
-              <p className="text-sm font-medium">{DEMO_FLEET}</p>
-              <p className="mono text-[11px] text-paper/45">{DEMO_REGION}</p>
+              <label className="sr-only" htmlFor="carrier-switch">
+                Carrier
+              </label>
+              <select
+                id="carrier-switch"
+                value={carrierId}
+                onChange={(event) =>
+                  router.replace(`/dashboard/?carrier=${encodeURIComponent(event.target.value)}`)
+                }
+                className="rounded-lg border border-paper/15 bg-[#071421] px-2 py-1 text-sm"
+              >
+                {carriers.length === 0 ? (
+                  <option value={carrierId}>{carrier?.legal_name ?? DEMO_FLEET}</option>
+                ) : (
+                  carriers.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.legal_name}
+                      {item.usdot ? ` · USDOT ${item.usdot}` : ""}
+                    </option>
+                  ))
+                )}
+              </select>
+              <p className="mono text-[11px] text-paper/45">
+                {carrier?.source === "fmcsa"
+                  ? `${carrier.city ?? ""}, ${carrier.state ?? ""} · public FMCSA record`
+                  : carrier?.source === "csv"
+                    ? "Loaded from a telematics CSV"
+                    : DEMO_REGION}
+              </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/" className="rounded-full border border-paper/15 px-4 py-2 text-sm text-paper/80 hover:bg-paper/5">
               Marketing
+            </Link>
+            <Link href="/live/" className="rounded-full border border-paper/15 px-4 py-2 text-sm text-paper/80 hover:bg-paper/5">
+              Ingest USDOT
             </Link>
             <Link href="/pilot/" className="rounded-full border border-paper/15 px-4 py-2 text-sm text-paper/80 hover:bg-paper/5">
               Book pilot
@@ -123,9 +257,12 @@ export function OpsDashboard() {
       </header>
 
       <main className="mx-auto max-w-[1400px] space-y-4 px-4 py-4">
+        {error ? (
+          <p className="rounded-2xl border border-danger/40 bg-danger/15 px-4 py-3 text-sm">{error}</p>
+        ) : null}
         <p className="rounded-2xl border border-amber/30 bg-amber/10 px-4 py-3 text-sm text-paper/80">
-          <span className="font-semibold text-amber-2">2026 problem in one line:</span> this fleet already pays for
-          Samsara / Motive cameras. The gap is closing the work and proving it for insurance, CSA, and the shipper.
+          <span className="font-semibold text-amber-2">Live server + SQLite:</span> Run agent, approve, close a work
+          order, or ingest a CSV — then refresh. The close loop stays in the database.
         </p>
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <Kpi label="Open alerts" value={String(metrics.openAlerts)} hint="Still sitting in the feed" />
@@ -185,7 +322,10 @@ export function OpsDashboard() {
         </Panel>
 
         <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-          <Panel title="Open alerts feed" meta={`${state.alerts.length} total · mock Samsara / Geotab / ELD`}>
+          <Panel
+            title="Open alerts feed"
+            meta={`${state.alerts.length} total · ${carrier?.source === "fmcsa" ? "FMCSA SMS" : carrier?.source === "csv" ? "CSV import" : "Heartland seed"}`}
+          >
             <div className="dash-scroll max-h-[520px] overflow-auto">
               {state.alerts.map((alert) => {
                 const truck = truckById(state.trucks, alert.truckId);
@@ -313,7 +453,7 @@ export function OpsDashboard() {
             )}
           </Panel>
 
-          <Panel title="Work orders" meta={`${state.workOrders.length} created this session`}>
+          <Panel title="Work orders" meta={`${state.workOrders.length} in SQLite`}>
             {state.workOrders.length === 0 ? (
               <p className="px-4 py-8 text-sm text-paper/50">
                 Routine alerts become shop tickets automatically. Critical ones wait for your approval.
@@ -326,8 +466,8 @@ export function OpsDashboard() {
                       <th className="px-4 py-2 font-medium">WO</th>
                       <th className="px-4 py-2 font-medium">Unit</th>
                       <th className="px-4 py-2 font-medium">Job</th>
-                      <th className="px-4 py-2 font-medium">Pri</th>
-                      <th className="px-4 py-2 font-medium">Shop</th>
+                      <th className="px-4 py-2 font-medium">Status</th>
+                      <th className="px-4 py-2 font-medium">Close</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -338,8 +478,20 @@ export function OpsDashboard() {
                           <td className="mono px-4 py-2 text-xs text-paper/55">{wo.id.slice(0, 14)}</td>
                           <td className="px-4 py-2">{truck?.unit}</td>
                           <td className="px-4 py-2">{wo.title}</td>
-                          <td className="px-4 py-2 uppercase">{wo.priority}</td>
-                          <td className="px-4 py-2 text-paper/65">{wo.shop}</td>
+                          <td className="px-4 py-2 uppercase">{wo.status}</td>
+                          <td className="px-4 py-2">
+                            {wo.status === "completed" || wo.status === "cancelled" ? (
+                              <span className="text-xs text-paper/40">Done</span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleWorkOrder(wo.id, "completed")}
+                                className="rounded-full border border-paper/20 px-2 py-1 text-[11px] hover:bg-paper/10"
+                              >
+                                Mark complete
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
@@ -382,7 +534,7 @@ export function OpsDashboard() {
             </LogEmpty>
           </Panel>
 
-          <Panel title="Fleet strip" meta="24 simulated trucks">
+          <Panel title="Fleet strip" meta={`${state.trucks.length} units`}>
             <ul className="dash-scroll grid max-h-[280px] grid-cols-2 gap-2 overflow-auto p-3">
               {state.trucks.map((truck) => (
                 <li key={truck.id} className="rounded-lg border border-paper/8 px-2 py-2">
@@ -395,6 +547,43 @@ export function OpsDashboard() {
             </ul>
           </Panel>
         </section>
+
+        <Panel title="Load a real alert CSV" meta="What a fleet can export today without Samsara OAuth">
+          <div className="space-y-3 px-4 py-4 text-sm text-paper/75">
+            <p>
+              Ask for the last two weeks of alerts. Columns we accept:{" "}
+              <span className="mono text-xs">unit, code, title, detail, category, severity, source</span>.{" "}
+              <a className="underline" href="/sample-alerts.csv" download>
+                Download the sample
+              </a>
+              .
+            </p>
+            <input
+              value={csvName}
+              onChange={(event) => setCsvName(event.target.value)}
+              placeholder="New fleet name (only if this is a new carrier)"
+              className="w-full rounded-lg border border-paper/10 bg-[#071421] px-3 py-2 text-sm outline-none focus:border-amber"
+            />
+            <label className="block">
+              <span className="sr-only">Alert CSV</span>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                disabled={busy}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void handleCsv(file, Boolean(csvName.trim()));
+                  event.target.value = "";
+                }}
+                className="text-sm"
+              />
+            </label>
+            <p className="text-xs text-paper/45">
+              Leave the name blank to add rows to the carrier you are looking at. Type a name to create a new
+              carrier in SQLite, run the agent, and switch the console to it.
+            </p>
+          </div>
+        </Panel>
 
         <p className="pb-6 text-center text-xs text-paper/35">
           ROI math for the pitch: closed work × ({BASELINE_HOURS}h baseline − {AGENT_MINUTES}m agent) ×{" "}

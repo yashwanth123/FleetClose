@@ -1,0 +1,6 @@
+unit,code,title,detail,category,severity,source,driver,location
+HF-107,BRAKE_FAULT,ABS / brake circuit fault,Tractor ABS lamp + low air warning. Driver reports longer pedal travel.,safety,critical,Samsara,Andre Cole,"I-35, Des Moines, IA"
+HF-104,REEFER_TEMP,Reefer setpoint drift,Box temp 4F above setpoint for 22 minutes. Dairy load not yet dispatched.,maintenance,urgent,Geotab,Priya Shah,Kansas City yard
+HF-101,OIL_DUE,Oil change window opened,PM oil interval reached. Filter kit on the shelf.,maintenance,routine,Samsara,Marcus Hale,"I-80, Iowa City, IA"
+HF-122,CAMERA_DISTRACT,Handheld phone while rolling,Motive camera flagged a handheld event. No mechanical fault.,telematics,urgent,Motive,Ben Walker,"I-29, St. Joseph, MO"
+HF-133,HOS_CRIT,Hours-of-service limit,Driver approaching 11-hour limit with a steel coil still 90 miles out.,compliance,critical,ELD,Tyler Brooks,"I-80, Grand Island, NE"

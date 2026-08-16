@@ -1,34 +1,40 @@
 # FleetClose
 
-Turn the telematics you already pay for into closed work and a 2026 proof file — so mid-market fleets stop chasing dashboards and can answer the insurer.
+Turn the telematics mid-market fleets already pay for into closed work and a 2026 proof file.
 
-## What it does today
-
-| Page | Job |
-| --- | --- |
-| `/` | 2026 marketing: cameras paid for, work not closed |
-| `/dashboard/` | Live ops demo + proof pack (insurance / CSA / shipper) |
-| `/playbook/` | Email, LinkedIn, call open, demo script, objections |
-| `/pilot/` | $3,500 / 30-day / 100-truck request |
-
-The agent auto-closes routine PM, coaches camera/policy noise (no fake shop tickets), and escalates brakes, air, overheat, HOS, crashes, and serious camera events.
+This is a **real Next.js server** (not a static export): SQLite, API routes, persisted work orders, and FMCSA open-data ingest.
 
 ## Run
 
 ```bash
 npm install
+npm test
 npm run dev
 ```
 
-- http://localhost:3000/
-- http://localhost:3000/dashboard/
-- http://localhost:3000/playbook/
-- http://localhost:3000/pilot/
+- http://localhost:3000/ — marketing
+- http://localhost:3000/dashboard — Heartland demo (server + DB)
+- http://localhost:3000/live — real USDOT ingest (then open that carrier in the ops console)
+- http://localhost:3000/how — how the backend works
+- http://localhost:3000/api/health — server + SQLite check
+- `public/sample-alerts.csv` — drop this on the dashboard if you do not have a fleet export yet
 
-## Live site
+`npm run build && npm start` is the production Node server. Host on Vercel or any Node host. GitHub Pages cannot run this.
 
-**https://yashwanth123.github.io/FleetClose/** after GitHub Pages is enabled on `main`.
+## What is real today
 
-## Out of scope
+| Piece | Status |
+| --- | --- |
+| Next.js API + SQLite | Yes |
+| Agent run / approve / reset persisted | Yes |
+| FMCSA census + roadside violations | Yes (public USDOT) |
+| Telematics CSV ingest | Yes |
+| Work orders marked complete | Yes |
+| Multi-carrier ops console | Yes |
+| Pilot leads stored | Yes |
+| Samsara / Motive / Geotab live feed | No — needs the fleet’s token |
+| Twilio SMS | Outbox in DB only |
+
+## Out of scope until a paying fleet
 
 Real telematics OAuth, predictive ML, routing, mobile apps, replacing a CMMS.

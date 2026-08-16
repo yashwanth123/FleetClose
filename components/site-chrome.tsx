@@ -3,9 +3,10 @@ import { Wordmark } from "@/components/brand";
 
 const nav = [
   { href: "/#problem", label: "2026 problem" },
-  { href: "/#how", label: "How it works" },
+  { href: "/how/", label: "How it works" },
   { href: "/playbook/", label: "Playbook" },
-  { href: "/dashboard/", label: "Live demo" },
+  { href: "/live/", label: "Real USDOT" },
+  { href: "/dashboard/", label: "Ops console" },
 ];
 
 export function SiteHeader({ tone = "light" }: { tone?: "light" | "dark" }) {
@@ -63,6 +64,12 @@ export function SiteFooter({ tone = "light" }: { tone?: "light" | "dark" }) {
           <Wordmark tone={dark ? "dark" : "light"} />
         </Link>
         <div className="flex flex-wrap gap-4">
+          <Link href="/how/" className="hover:underline">
+            How it works
+          </Link>
+          <Link href="/live/" className="hover:underline">
+            Real USDOT
+          </Link>
           <Link href="/dashboard/" className="hover:underline">
             Ops demo
           </Link>
