@@ -1,7 +1,7 @@
 import { createSeedState } from "./seed";
 import type { DemoState } from "./types";
 
-const KEY = "fleetclose-demo-v1";
+const KEY = "fleetclose-demo-v2";
 
 export function loadDemoState(): DemoState {
   if (typeof window === "undefined") return createSeedState();

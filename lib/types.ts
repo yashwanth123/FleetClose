@@ -37,7 +37,7 @@ export type Alert = {
   detail: string;
   category: AlertCategory;
   severity: Severity;
-  source: "Samsara" | "Geotab" | "ELD" | "Shop";
+  source: "Samsara" | "Geotab" | "Motive" | "ELD" | "Shop";
   createdAt: string;
   status: AlertStatus;
 };
@@ -117,4 +117,6 @@ export type RoiMetrics = {
   baselineHours: number;
   estimatedSavings: number;
   hoursSaved: number;
+  proofReady: number;
+  openCritical: number;
 };

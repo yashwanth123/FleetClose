@@ -1,4 +1,5 @@
 import { makeId } from "./ids";
+import { isCoachOnly } from "./proof";
 import { truckById } from "./seed";
 import type {
   AgentDecision,
@@ -19,7 +20,11 @@ const CRITICAL_CODES = new Set([
   "AIR_LEAK",
   "HOS_CRIT",
   "COLLISION",
+  "CAMERA_DISTRACT",
+  "FOLLOW_DIST",
 ]);
+
+const OOS_CODES = new Set(["BRAKE_FAULT", "OVERHEAT", "AIR_LEAK", "COLLISION"]);
 
 const SAFETY_SHOP: Record<string, string> = {
   "t-107": "Des Moines approved shop · I-35 exit 72",
@@ -69,13 +74,22 @@ function planFor(alert: Alert, truck: Truck | undefined, escalate: boolean) {
     return `Force a 30-minute off-duty / sleeper now. Do not ask ${driver} to stretch. Re-cover the steel coil with a fresh driver or slip-seat from Grand Island. Log the intervention for the safety file.`;
   }
   if (alert.code === "COLLISION") {
-    return `Keep ${unit} stopped until safety reviews the dashcam. Confirm no injury, exchange, or airbag. If clear, a manager can release the truck; otherwise tow and drug/alcohol protocol.`;
+    return `Keep ${unit} stopped until safety reviews the dashcam. Confirm no injury, exchange, or airbag. If clear, a manager can release the truck; otherwise tow and drug/alcohol protocol. File the clip + decision for the 2026 insurance packet.`;
+  }
+  if (alert.code === "CAMERA_DISTRACT") {
+    return `Do not park the truck. Pull the Motive clip, coach ${driver} today, and write the outcome to the safety file. Insurers are asking “what did you do after the handheld event?” — this close is the answer.`;
+  }
+  if (alert.code === "FOLLOW_DIST") {
+    return `Coach ${driver} on following distance, attach the Samsara clip, and keep ${unit} in service unless a second event lands this shift. Log it for CSA / renewal — this is not a shop ticket.`;
   }
   if (alert.code === "REEFER_TEMP") {
-    return `Pre-cool and verify the setpoint before the dairy load is hooked. If the unit cannot hold, swap reefers at Kansas City yard.`;
+    return `Pre-cool and verify the setpoint before the dairy load is hooked. If the unit cannot hold, swap reefers at Kansas City yard. Close the excursion so the shipper has a record.`;
   }
   if (alert.code === "IDLE_HIGH") {
     return `Coach ${driver} on idle policy and close with a coaching note — no shop ticket.`;
+  }
+  if (alert.code === "SEATBELT") {
+    return `Send ${driver} the policy clip, log the coaching, and close. Camera AI should not clog the shop queue.`;
   }
 
   if (escalate) {
@@ -90,8 +104,11 @@ function reasonFor(alert: Alert, escalate: boolean) {
   if (escalate) {
     return `${alert.severity === "critical" ? "Critical" : "Safety"} alert (${alert.code}) can create injury, CSA exposure, or a lost load. Agent will not auto-close — a human must approve the plan.`;
   }
-  if (alert.code === "IDLE_HIGH") {
-    return "Policy alert with no mechanical risk. Auto-close with a driver notification and keep it out of the shop queue.";
+  if (isCoachOnly(alert) && !escalate) {
+    return "Camera / policy event with no mechanical risk. Auto-close with coaching so the shop queue stays for trucks that cannot roll.";
+  }
+  if (isCoachOnly(alert) && escalate) {
+    return "Camera AI safety event. A human signs the coaching plan so the 2026 renewal file shows action — not just that a dashboard lit up.";
   }
   if (alert.severity === "urgent") {
     return "Urgent but non-safety. Faster to auto-create a work order than wait for someone to copy this into a ticket.";
@@ -145,8 +162,10 @@ function notificationsFor(args: {
       id: makeId("ntf"),
       channel: "radio",
       to: driver,
-      subject: `${unit} hold for safety`,
-      body: "Ops is reviewing a safety alert on your truck. Stand by for instructions — do not ignore lamps.",
+      subject: isCoachOnly(alert) ? `${unit} coaching review` : `${unit} hold for safety`,
+      body: isCoachOnly(alert)
+        ? "Safety is reviewing a camera event. Keep rolling unless they call you off the load."
+        : "Ops is reviewing a safety alert on your truck. Stand by for instructions — do not ignore lamps.",
       sentAt: now,
       relatedAlertId: alert.id,
     });
@@ -172,13 +191,32 @@ function notificationsFor(args: {
       sentAt: now,
       relatedAlertId: alert.id,
     });
+    return items;
   }
 
+  items.push({
+    id: makeId("ntf"),
+    channel: "sms",
+    to: driver,
+    subject: `Coaching on ${unit}`,
+    body: alert.title,
+    sentAt: now,
+    relatedAlertId: alert.id,
+  });
+  items.push({
+    id: makeId("ntf"),
+    channel: "email",
+    to: "Safety desk",
+    subject: `Coaching logged · ${unit}`,
+    body: `Closed for the 2026 proof file. ${alert.detail}`,
+    sentAt: now,
+    relatedAlertId: alert.id,
+  });
   return items;
 }
 
 function workOrderFor(alert: Alert, truck: Truck | undefined, now: string): WorkOrder | null {
-  if (alert.code === "IDLE_HIGH") return null;
+  if (isCoachOnly(alert)) return null;
   const escalate = shouldEscalate(alert);
   const priority = priorityFor(alert, escalate);
   return {
@@ -312,7 +350,7 @@ export function resolveEscalation(
   const alert = state.alerts.find((item) => item.id === escalation.alertId);
   if (!alert) return state;
   const truck = truckById(state.trucks, alert.truckId);
-  const takeOutOfService = action === "approved" && alert.category === "safety";
+  const takeOutOfService = action === "approved" && OOS_CODES.has(alert.code);
 
   let workOrders = state.workOrders;
   let notifications = state.notifications;
@@ -324,20 +362,20 @@ export function resolveEscalation(
       workOrder.status = "dispatched";
       workOrder.priority = "p1";
       workOrders = [workOrder, ...workOrders];
-      notifications = [
-        ...notificationsFor({ alert, truck, workOrder, escalate: false, now }),
-        {
-          id: makeId("ntf"),
-          channel: "email",
-          to: "Safety desk",
-          subject: `Approved plan · ${truck?.unit ?? alert.truckId}`,
-          body: note?.trim() || escalation.recommendedPlan,
-          sentAt: now,
-          relatedAlertId: alert.id,
-        },
-        ...notifications,
-      ];
     }
+    notifications = [
+      ...notificationsFor({ alert, truck, workOrder, escalate: false, now }),
+      {
+        id: makeId("ntf"),
+        channel: "email",
+        to: "Safety desk",
+        subject: `Approved plan · ${truck?.unit ?? alert.truckId}`,
+        body: note?.trim() || escalation.recommendedPlan,
+        sentAt: now,
+        relatedAlertId: alert.id,
+      },
+      ...notifications,
+    ];
     if (takeOutOfService) {
       trucks = trucks.map((item) =>
         item.id === alert.truckId ? { ...item, status: "oos" } : item,

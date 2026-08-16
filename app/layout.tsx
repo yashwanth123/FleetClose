@@ -22,7 +22,7 @@ const mono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "FleetClose — Turn alerts into closed work",
   description:
-    "FleetClose helps mid-market trucking companies turn telematics and maintenance alerts into work orders, notifications, and a decision trail — so trucks keep running.",
+    "FleetClose turns the cameras and ELDs mid-market fleets already pay for into closed work and a 2026 proof file — work orders, coaching, and an audit trail insurers can see.",
   icons: { icon: "/favicon.svg" },
 };
 

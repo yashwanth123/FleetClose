@@ -2,7 +2,7 @@ import type { Alert, DemoState, Truck } from "./types";
 import { hoursAgo, minutesAgo } from "./ids";
 
 export const DEMO_FLEET = "Heartland Freight";
-export const DEMO_REGION = "Midwest regional · 24 trucks in this demo";
+export const DEMO_REGION = "Midwest regional · Aug 2026 · cameras on, work still open";
 
 const trucks: Truck[] = [
   { id: "t-101", unit: "HF-101", vin: "1HSDJAPR8NN123101", year: 2022, make: "Freightliner", model: "Cascadia", type: "dry_van", driver: "Marcus Hale", location: "I-80, Iowa City, IA", status: "en_route", miles: 412_880 },
@@ -168,12 +168,12 @@ function alerts(now: number): Alert[] {
     {
       id: "a-12",
       truckId: "t-136",
-      code: "WIPER_PM",
-      title: "Wiper / light PM due",
-      detail: "Cab PM checklist: wipers streaking, marker lamp out. Truck is already at Cedar Rapids shop.",
-      category: "maintenance",
-      severity: "routine",
-      source: "Shop",
+      code: "CAMERA_DISTRACT",
+      title: "In-cab phone use (camera AI)",
+      detail: "Motive inward cam: 8-second glance at a handheld at 61 mph. Insurer requires coaching logged within 24h for the 2026 renewal file.",
+      category: "safety",
+      severity: "critical",
+      source: "Motive",
       createdAt: hoursAgo(2.4, now),
       status: "open",
     },
@@ -204,12 +204,12 @@ function alerts(now: number): Alert[] {
     {
       id: "a-15",
       truckId: "t-147",
-      code: "FIFTH_WEAR",
-      title: "Fifth-wheel lube / wear",
-      detail: "Shop note: jaw play at last hook. Unit is parked in Topeka. Next load tomorrow 05:30.",
-      category: "maintenance",
-      severity: "routine",
-      source: "Shop",
+      code: "FOLLOW_DIST",
+      title: "Following-distance AI event",
+      detail: "Samsara CM: 1.2s gap at 64 mph, two repeats this week. Not a crash — but this is the clip an adjuster asks for after a nuclear-verdict year.",
+      category: "safety",
+      severity: "urgent",
+      source: "Samsara",
       createdAt: hoursAgo(8.2, now),
       status: "open",
     },
@@ -228,12 +228,12 @@ function alerts(now: number): Alert[] {
     {
       id: "a-17",
       truckId: "t-155",
-      code: "BELT_SQUEAL",
-      title: "Accessory belt noise",
-      detail: "Driver reports squeal on cold start. Voltage and temps normal. Can wait for next PM window.",
-      category: "maintenance",
+      code: "SEATBELT",
+      title: "Seatbelt unlatched while rolling",
+      detail: "Camera AI: belt off for 46 seconds after a shipper exit. Policy is coach + log — do not open a shop ticket.",
+      category: "telematics",
       severity: "routine",
-      source: "Samsara",
+      source: "Motive",
       createdAt: hoursAgo(3.8, now),
       status: "open",
     },
@@ -290,7 +290,7 @@ export function createSeedState(now = Date.now()): DemoState {
         at: new Date(now).toISOString(),
         actor: "human",
         type: "demo.reset",
-        message: `${DEMO_FLEET} demo loaded — 24 trucks, 20 open alerts sitting in the feed.`,
+        message: `${DEMO_FLEET} Aug 2026 demo loaded — 24 trucks, cameras already paid for, 20 alerts still sitting.`,
       },
     ],
   };

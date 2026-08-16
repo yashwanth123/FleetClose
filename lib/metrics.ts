@@ -1,3 +1,4 @@
+import { buildProofPack } from "./proof";
 import type { DemoState, RoiMetrics } from "./types";
 
 /** Conservative mid-market unplanned downtime, used only for the demo ROI story. */
@@ -35,6 +36,8 @@ export function computeRoi(state: DemoState, now = Date.now()): RoiMetrics {
   const hoursSaved = closedForSavings * (BASELINE_HOURS - AGENT_MINUTES / 60) * DOWNTIME_PROBABILITY;
   const estimatedSavings = Math.round(hoursSaved * DOWNTIME_PER_HOUR);
 
+  const proof = buildProofPack(state);
+
   return {
     openAlerts,
     processedAlerts,
@@ -45,5 +48,7 @@ export function computeRoi(state: DemoState, now = Date.now()): RoiMetrics {
     baselineHours: BASELINE_HOURS,
     estimatedSavings,
     hoursSaved,
+    proofReady: proof.ready,
+    openCritical: proof.openCritical,
   };
 }
