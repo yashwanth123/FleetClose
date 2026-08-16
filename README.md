@@ -1,54 +1,34 @@
 # FleetClose
 
-Turn telematics and maintenance alerts into closed work — so mid-market fleets keep trucks running and ops teams stop chasing dashboards.
+Turn the telematics you already pay for into closed work and a 2026 proof file — so mid-market fleets stop chasing dashboards and can answer the insurer.
 
-## Working product
+## What it does today
 
-| Page | What it does |
+| Page | Job |
 | --- | --- |
-| `/` | Marketing: problem, who it’s for, pricing |
-| `/dashboard/` | Live ops demo: 24 trucks, Run agent, work orders, escalation, ROI |
-| `/pilot/` | Paid pilot request ($3,500 / 30 days / 100 trucks) |
+| `/` | 2026 marketing: cameras paid for, work not closed |
+| `/dashboard/` | Live ops demo + proof pack (insurance / CSA / shipper) |
+| `/playbook/` | Email, LinkedIn, call open, demo script, objections |
+| `/pilot/` | $3,500 / 30-day / 100-truck request |
 
-Every button on those pages goes somewhere real. Logo → home. **Live demo** → dashboard. **Book pilot** → intake form that opens a prefilled email.
+The agent auto-closes routine PM, coaches camera/policy noise (no fake shop tickets), and escalates brakes, air, overheat, HOS, crashes, and serious camera events.
 
-## Run locally
+## Run
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open:
-
 - http://localhost:3000/
 - http://localhost:3000/dashboard/
+- http://localhost:3000/playbook/
 - http://localhost:3000/pilot/
-
-`npm run build` writes a static site to `out/`. `npm start` serves that folder on port 3000.
 
 ## Live site
 
-After this repo’s GitHub Pages workflow runs on `main`:
+**https://yashwanth123.github.io/FleetClose/** after GitHub Pages is enabled on `main`.
 
-**https://yashwanth123.github.io/FleetClose/**
+## Out of scope
 
-Or [deploy on Vercel](https://vercel.com/new/clone?repository-url=https://github.com/yashwanth123/FleetClose) — no extra config.
-
-## 5-minute demo
-
-1. Open `/dashboard/`.
-2. Show alerts sitting for hours.
-3. Hit **Run agent**.
-4. Routine alerts become work orders + notifications.
-5. Approve/reject the red safety queue.
-6. Point at auto-resolve %, time-to-action, and estimated savings.
-7. Send them to `/pilot/` for the $3,500 offer.
-
-## Out of scope (on purpose)
-
-- Real Samsara / Geotab OAuth (the feed is mocked)
-- Predictive failure ML
-- Routing / load optimization
-- Mobile apps
-- Replacing a full CMMS
+Real telematics OAuth, predictive ML, routing, mobile apps, replacing a CMMS.

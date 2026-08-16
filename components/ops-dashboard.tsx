@@ -13,6 +13,7 @@ import {
 } from "@/lib/metrics";
 import { DEMO_FLEET, DEMO_REGION, createSeedState, truckById } from "@/lib/seed";
 import { SEVERITY_LABEL, TRUCK_TYPE_LABEL, formatMoney, formatPct, formatRelative } from "@/lib/ids";
+import { buildProofPack } from "@/lib/proof";
 import { clearDemoState, loadDemoState, saveDemoState } from "@/lib/storage";
 import type { Alert, DemoState, Escalation, Severity } from "@/lib/types";
 
@@ -46,6 +47,7 @@ export function OpsDashboard() {
   }, [hydrated, state]);
 
   const metrics = useMemo(() => computeRoi(state), [state]);
+  const proof = useMemo(() => buildProofPack(state), [state]);
   const selectedAlert = state.alerts.find((alert) => alert.id === selectedAlertId) ?? state.alerts[0];
   const selectedTruck = selectedAlert ? truckById(state.trucks, selectedAlert.truckId) : undefined;
   const selectedDecision = selectedAlert
@@ -121,7 +123,11 @@ export function OpsDashboard() {
       </header>
 
       <main className="mx-auto max-w-[1400px] space-y-4 px-4 py-4">
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <p className="rounded-2xl border border-amber/30 bg-amber/10 px-4 py-3 text-sm text-paper/80">
+          <span className="font-semibold text-amber-2">2026 problem in one line:</span> this fleet already pays for
+          Samsara / Motive cameras. The gap is closing the work and proving it for insurance, CSA, and the shipper.
+        </p>
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <Kpi label="Open alerts" value={String(metrics.openAlerts)} hint="Still sitting in the feed" />
           <Kpi
             label="Auto-resolve"
@@ -134,11 +140,49 @@ export function OpsDashboard() {
             hint={`Baseline today: ${BASELINE_HOURS}h average`}
           />
           <Kpi
-            label="Est. savings"
+            label="Est. downtime saved"
             value={metrics.processedAlerts === 0 ? "—" : formatMoney(metrics.estimatedSavings)}
             hint={`${formatMoney(DOWNTIME_PER_HOUR)}/hr × ${Math.round(DOWNTIME_PROBABILITY * 100)}% downtime risk`}
           />
+          <Kpi
+            label="Proof pack ready"
+            value={metrics.processedAlerts === 0 ? "—" : `${metrics.proofReady}`}
+            hint={`${proof.waitingHuman} waiting on a human · ${metrics.openCritical} critical still open`}
+          />
         </section>
+
+        <Panel title="2026 proof pack" meta="What an insurer or safety director asks for at renewal">
+          <div className="dash-scroll max-h-[240px] overflow-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="sticky top-0 bg-[#10283f] text-[11px] uppercase tracking-wide text-paper/45">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Event</th>
+                  <th className="px-4 py-2 font-medium">Unit</th>
+                  <th className="px-4 py-2 font-medium">Action</th>
+                  <th className="px-4 py-2 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {proof.rows.map((row) => (
+                  <tr key={row.alert.id} className="border-t border-paper/8">
+                    <td className="px-4 py-2">{row.alert.title}</td>
+                    <td className="px-4 py-2">{row.unit}</td>
+                    <td className="px-4 py-2 text-paper/70">
+                      {row.decision
+                        ? row.decision.action === "escalate"
+                          ? "Human review"
+                          : "Auto-closed / coached"
+                        : "Sitting — no proof yet"}
+                    </td>
+                    <td className="px-4 py-2">
+                      <StatusPill status={row.alert.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
 
         <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
           <Panel title="Open alerts feed" meta={`${state.alerts.length} total · mock Samsara / Geotab / ELD`}>

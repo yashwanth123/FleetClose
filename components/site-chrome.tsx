@@ -2,10 +2,10 @@ import Link from "next/link";
 import { Wordmark } from "@/components/brand";
 
 const nav = [
-  { href: "/#problem", label: "Problem" },
+  { href: "/#problem", label: "2026 problem" },
   { href: "/#how", label: "How it works" },
+  { href: "/playbook/", label: "Playbook" },
   { href: "/dashboard/", label: "Live demo" },
-  { href: "/pilot/", label: "Book pilot" },
 ];
 
 export function SiteHeader({ tone = "light" }: { tone?: "light" | "dark" }) {
@@ -66,11 +66,11 @@ export function SiteFooter({ tone = "light" }: { tone?: "light" | "dark" }) {
           <Link href="/dashboard/" className="hover:underline">
             Ops demo
           </Link>
+          <Link href="/playbook/" className="hover:underline">
+            Playbook
+          </Link>
           <Link href="/pilot/" className="hover:underline">
             $3,500 pilot
-          </Link>
-          <Link href="/#problem" className="hover:underline">
-            Problem
           </Link>
         </div>
         <p>Turn alerts into closed work.</p>
