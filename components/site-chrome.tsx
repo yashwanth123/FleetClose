@@ -6,7 +6,7 @@ const nav = [
   { href: "/how/", label: "How it works" },
   { href: "/playbook/", label: "Playbook" },
   { href: "/live/", label: "Real USDOT" },
-  { href: "/dashboard/", label: "Sim demo" },
+  { href: "/dashboard/", label: "Ops console" },
 ];
 
 export function SiteHeader({ tone = "light" }: { tone?: "light" | "dark" }) {

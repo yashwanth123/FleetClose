@@ -41,10 +41,24 @@ export function PilotForm() {
       return;
     }
     const lead: PilotLead = { ...form, submittedAt: new Date().toISOString() };
-    savePilotLead(lead);
-    setSent(lead);
-    setError("");
-    window.location.href = pilotMailto(lead);
+    fetch("/api/pilot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(lead),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const data = (await response.json()) as { error?: string };
+          throw new Error(data.error || "Could not save the lead on the server");
+        }
+        savePilotLead(lead);
+        setSent(lead);
+        setError("");
+        window.location.href = pilotMailto(lead);
+      })
+      .catch((err: Error) => {
+        setError(err.message);
+      });
   }
 
   if (sent) {

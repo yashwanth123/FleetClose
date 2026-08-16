@@ -1,52 +1,50 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
-import { runAgent } from "@/lib/agent";
-import { FEATURED_DOTS, listViolations, lookupCarrier, ratingLabel, searchCarriers, type FmcsaCarrier } from "@/lib/fmcsa";
-import { stateFromViolations } from "@/lib/fmcsa-map";
+import { apiJson } from "@/lib/client-api";
+import { FEATURED_DOTS, ratingLabel, type FmcsaCarrier } from "@/lib/fmcsa";
 import { computeRoi } from "@/lib/metrics";
 import type { DemoState } from "@/lib/types";
+
+type IngestPayload = {
+  carrierId: string;
+  carrier: {
+    legal_name: string;
+    usdot: string | null;
+    city: string | null;
+    state: string | null;
+    power_units: number | null;
+    drivers: number | null;
+    safety_rating: string | null;
+    classdef?: string;
+  };
+  state: DemoState;
+};
 
 export function LiveFmcsa() {
   const [dot, setDot] = useState("638655");
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<FmcsaCarrier[]>([]);
-  const [carrier, setCarrier] = useState<FmcsaCarrier | null>(null);
-  const [state, setState] = useState<DemoState | null>(null);
+  const [payload, setPayload] = useState<IngestPayload | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const metrics = useMemo(() => (state ? computeRoi(state) : null), [state]);
+  const metrics = useMemo(() => (payload ? computeRoi(payload.state) : null), [payload]);
 
   async function loadDot(value: string) {
     setBusy(true);
     setError("");
     try {
-      const profile = await lookupCarrier(value);
-      if (!profile) {
-        setError("No active census row for that USDOT.");
-        setCarrier(null);
-        setState(null);
-        return;
-      }
-      const violations = await listViolations(value);
-      if (violations.length === 0) {
-        setError(`${profile.legal_name} is real, but this SMS snapshot has no public violations to close.`);
-        setCarrier(profile);
-        setState(null);
-        return;
-      }
-      const next = stateFromViolations(
-        profile.legal_name ?? "Carrier",
-        profile.phy_city ?? "",
-        profile.phy_state ?? "",
-        violations,
-      );
-      setCarrier(profile);
-      setState(runAgent(next));
-      setDot(profile.dot_number ?? value);
+      const next = await apiJson<IngestPayload>("/api/fmcsa/ingest", {
+        method: "POST",
+        body: JSON.stringify({ dot: value }),
+      });
+      setPayload(next);
+      setDot(next.carrier.usdot ?? value);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Open-data request failed.");
+      setError(err instanceof Error ? err.message : "Open-data ingest failed.");
+      setPayload(null);
     } finally {
       setBusy(false);
     }
@@ -57,7 +55,8 @@ export function LiveFmcsa() {
     setBusy(true);
     setError("");
     try {
-      setHits(await searchCarriers(query));
+      const result = await apiJson<{ hits: FmcsaCarrier[] }>(`/api/fmcsa/ingest?q=${encodeURIComponent(query)}`);
+      setHits(result.hits);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Search failed.");
     } finally {
@@ -65,11 +64,14 @@ export function LiveFmcsa() {
     }
   }
 
+  const carrier = payload?.carrier;
+  const state = payload?.state;
+
   return (
     <div className="space-y-6">
       <p className="rounded-2xl border border-amber/40 bg-amber/10 px-4 py-3 text-sm">
-        Public FMCSA census + SMS violation files via data.transportation.gov. These companies are{" "}
-        <strong>not FleetClose customers</strong> and we are not affiliated. We do not call their phone from this page.
+        The <strong>server</strong> pulls FMCSA open data, stores the carrier in SQLite, and runs the agent. Public
+        record only — not a FleetClose customer, not affiliated.
       </p>
 
       <div className="flex flex-wrap gap-2">
@@ -112,7 +114,7 @@ export function LiveFmcsa() {
           className="rounded-xl border border-[var(--line)] bg-paper-2 px-3 py-2"
         />
         <button type="submit" className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-navy" disabled={busy}>
-          {busy ? "Loading…" : "Load + run agent"}
+          {busy ? "Ingesting…" : "Ingest + run on server"}
         </button>
       </form>
 
@@ -142,13 +144,20 @@ export function LiveFmcsa() {
 
       {carrier ? (
         <section className="rounded-2xl bg-navy p-6 text-paper">
-          <p className="mono text-[11px] uppercase tracking-[0.16em] text-amber-2">Real public carrier</p>
+          <p className="mono text-[11px] uppercase tracking-[0.16em] text-amber-2">Saved in SQLite</p>
           <h2 className="display mt-2 text-3xl">{carrier.legal_name}</h2>
           <p className="mt-2 text-sm text-paper/70">
-            USDOT {carrier.dot_number} · {carrier.phy_city}, {carrier.phy_state} · {carrier.power_units} power units ·{" "}
-            {carrier.total_drivers} drivers · {ratingLabel(carrier.safety_rating)}
+            USDOT {carrier.usdot} · {carrier.city}, {carrier.state} · {carrier.power_units} power units ·{" "}
+            {carrier.drivers} drivers · {ratingLabel(carrier.safety_rating ?? undefined)}
           </p>
-          <p className="mt-2 text-xs text-paper/45">{carrier.classdef}</p>
+          {payload ? (
+            <Link
+              href={`/dashboard/?carrier=${encodeURIComponent(payload.carrierId)}`}
+              className="mt-4 inline-flex rounded-full bg-amber px-4 py-2 text-sm font-semibold text-navy"
+            >
+              Open this carrier in the ops console
+            </Link>
+          ) : null}
         </section>
       ) : null}
 
@@ -189,7 +198,7 @@ export function LiveFmcsa() {
             </table>
           </div>
           {state.workOrders.length > 0 ? (
-            <p className="text-sm text-ink/65">{state.workOrders.length} work orders opened from public roadside defects.</p>
+            <p className="text-sm text-ink/65">{state.workOrders.length} work orders stored on the server.</p>
           ) : null}
         </section>
       ) : null}

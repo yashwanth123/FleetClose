@@ -69,7 +69,7 @@ export function stateFromViolations(
   violations: ViolationIn[],
 ): DemoState {
   const trucks: Truck[] = violations.map((violation, index) => ({
-    id: `fmcsa-${violation.unique_id ?? index}`,
+    id: `fmcsa-${violation.unique_id ?? "row"}-${violation.viol_code ?? "code"}-${index}`,
     unit: `DOT-${String(index + 1).padStart(2, "0")}`,
     vin: "public-inspection",
     year: 2022,
@@ -86,7 +86,7 @@ export function stateFromViolations(
     const code = mapCode(violation.section_desc, violation.group_desc, violation.basic_desc);
     const mapped = mapBasic(violation.basic_desc);
     return {
-      id: `viol-${violation.unique_id ?? index}-${violation.viol_code ?? "x"}`,
+      id: `viol-${violation.unique_id ?? "row"}-${violation.viol_code ?? "x"}-${index}`,
       truckId: trucks[index]?.id ?? `fmcsa-${index}`,
       code,
       title: violation.section_desc || violation.group_desc || "FMCSA violation",

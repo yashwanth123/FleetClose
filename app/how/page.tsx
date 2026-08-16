@@ -7,16 +7,16 @@ export default function HowPage() {
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-5 py-16">
         <p className="mono text-[12px] uppercase tracking-[0.22em] text-amber">How it works</p>
-        <h1 className="display mt-3 text-4xl md:text-5xl">Simple version: no hidden server. Rules close the work in the browser.</h1>
+        <h1 className="display mt-3 text-4xl md:text-5xl">A real Next.js server, SQLite, and APIs — not a static brochure.</h1>
         <p className="mt-5 text-ink/70">
-          This MVP is a working demo you can sell a pilot with. It is not yet plugged into a live Samsara account or a
-          database. That is on purpose — we prove the loop first.
+          Run agent, FMCSA ingest, and pilot requests hit the server and persist. Samsara/Motive still need a customer
+          token. Everything else that can be real without that token is real.
         </p>
 
         <section className="mt-12">
           <h2 className="display text-3xl">What it does so far</h2>
           <ol className="mt-4 list-decimal space-y-3 pl-5 text-ink/80">
-            <li>Loads a fake Midwest fleet (24 trucks, 20 alerts sitting for hours).</li>
+            <li>Loads Heartland (simulated), a real USDOT from FMCSA, or a telematics CSV you drop on the console.</li>
             <li>
               You hit <strong>Run agent</strong>. A rules engine — not a live LLM — reads each alert.
             </li>
@@ -31,25 +31,27 @@ export default function HowPage() {
         <section className="mt-12">
           <h2 className="display text-3xl">“Backend” today</h2>
           <p className="mt-3 text-ink/70">
-            There is no login, no database, and no Samsara API key. The site is a static Next.js app. The brains live in{" "}
-            <code className="mono text-sm">lib/agent.ts</code>.
+            Next.js API routes + SQLite at <code className="mono text-sm">data/fleetclose.db</code>. Rules still live in{" "}
+            <code className="mono text-sm">lib/agent.ts</code>, but the server runs them and writes the result.
           </p>
           <ul className="mt-4 space-y-2 text-sm text-ink/80">
             <li>
-              — <strong>Seed data</strong> (<code className="mono">lib/seed.ts</code>) is the fake company.
+              — <code className="mono">POST /api/agent/run</code> and <code className="mono">/api/agent/resolve</code>
             </li>
             <li>
-              — <strong>Rules</strong> decide escalate vs auto-close vs coach-only.
+              — <code className="mono">POST /api/fmcsa/ingest</code> pulls a real USDOT and stores work
             </li>
             <li>
-              — <strong>Your browser</strong> keeps the demo in session storage so leaving the page does not wipe a run.
+              — <code className="mono">POST /api/alerts/ingest</code> loads a telematics CSV (unit, code, title)
             </li>
             <li>
-              — <strong>Pilot form</strong> opens a prefilled email. It does not write to our servers.
+              — <code className="mono">POST /api/work-orders</code> marks a shop ticket complete
             </li>
             <li>
-              — <strong>Real public data</strong> on <a className="underline" href="/live/">/live</a>: the browser calls
-              data.transportation.gov (FMCSA census + SMS violations). No Samsara key. No scraping.
+              — <code className="mono">POST /api/pilot</code> saves the lead, then opens email
+            </li>
+            <li>
+              — <code className="mono">GET /api/health</code> proves the server and database are up
             </li>
           </ul>
           <p className="mt-4 text-sm text-ink/60">

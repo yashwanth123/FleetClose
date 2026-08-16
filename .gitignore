@@ -30,5 +30,11 @@ yarn-error.log*
 .env
 .env*.local
 
+# local app database
+/data/*.db
+/data/*.db-journal
+/data/*.db-wal
+/data/*.db-shm
+
 # typescript
 *.tsbuildinfo

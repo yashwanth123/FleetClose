@@ -5,7 +5,7 @@ const steps = [
   {
     n: "01",
     title: "Alerts already fire",
-    body: "Samsara, Motive, Geotab, ELD, and the shop already ping. In 2026 the fleet paid for cameras. We do not replace that stack — we take the feed (mocked in this MVP) so nobody copy-pastes into Slack.",
+    body: "Samsara, Motive, Geotab, ELD, and the shop already ping. We take that feed as a CSV export, a public USDOT pull, or the Heartland demo — then nobody copy-pastes into Slack.",
   },
   {
     n: "02",
@@ -51,10 +51,10 @@ export default function MarketingPage() {
                 Run the 5-minute demo
               </Link>
               <Link
-                href="/playbook/"
+                href="/live/"
                 className="rounded-full border border-paper/20 px-5 py-3 text-sm text-paper hover:bg-paper/5"
               >
-                Sales playbook
+                Ingest a real USDOT
               </Link>
             </div>
             <p className="mt-6 text-sm text-paper/50">

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { resolveEscalation, runAgent, shouldEscalate } from "./agent";
+import { resolveEscalation, runAgent, shouldEscalate, updateWorkOrder } from "./agent";
 import { computeRoi } from "./metrics";
 import { buildProofPack, isCoachOnly } from "./proof";
 import { createSeedState } from "./seed";
@@ -89,6 +89,27 @@ test("rejecting an escalation leaves no work order and still writes an audit row
   assert.equal(alert?.status, "rejected");
   assert.equal(state.workOrders.some((wo) => wo.alertId === alert?.id), false);
   assert.ok(state.audit.some((row) => row.type === "human.reject" && row.alertId === alert?.id));
+});
+
+test("completing a work order writes an audit row and can release the truck", () => {
+  let state = runAgent(createSeedState());
+  const brake = state.escalations.find((item) => {
+    const alert = state.alerts.find((row) => row.id === item.alertId);
+    return alert?.code === "BRAKE_FAULT";
+  });
+  assert.ok(brake);
+  state = resolveEscalation(state, brake.id, "approved", "Park it.");
+  const wo = state.workOrders.find((item) => item.alertId === brake.alertId);
+  assert.ok(wo);
+  assert.equal(wo.status, "dispatched");
+  const parked = state.trucks.find((truck) => truck.id === wo.truckId);
+  assert.equal(parked?.status, "oos");
+  state = updateWorkOrder(state, wo.id, "completed");
+  const done = state.workOrders.find((item) => item.id === wo.id);
+  const released = state.trucks.find((truck) => truck.id === wo.truckId);
+  assert.equal(done?.status, "completed");
+  assert.equal(released?.status, "available");
+  assert.ok(state.audit.some((row) => row.type === "wo.completed"));
 });
 
 test("ROI and proof pack move after the agent runs", () => {

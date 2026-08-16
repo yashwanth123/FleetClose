@@ -44,3 +44,24 @@ test("real-shaped violations become a runnable agent state", () => {
   assert.equal(after.alerts.find((alert) => alert.code === "TIRE_PSI")?.status, "escalated");
   assert.equal(after.alerts.find((alert) => alert.title.includes("fire extinguisher"))?.status, "auto_closed");
 });
+
+test("same inspection unique_id still yields unique truck ids", () => {
+  const state = stateFromViolations("TEST CARRIER", "DES MOINES", "IA", [
+    {
+      unique_id: "shared",
+      viol_code: "39347E",
+      section_desc: "Brake tubing",
+      group_desc: "Brakes All Others",
+      basic_desc: "Vehicle Maintenance",
+    },
+    {
+      unique_id: "shared",
+      viol_code: "39375A3",
+      section_desc: "Tires - leaking",
+      group_desc: "Tires",
+      basic_desc: "Vehicle Maintenance",
+    },
+  ]);
+  const ids = state.trucks.map((truck) => truck.id);
+  assert.equal(new Set(ids).size, ids.length);
+});

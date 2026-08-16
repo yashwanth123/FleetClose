@@ -12,6 +12,7 @@ import type {
   Truck,
   WorkOrder,
   WorkOrderPriority,
+  WorkOrderStatus,
 } from "./types";
 
 const CRITICAL_CODES = new Set([
@@ -413,6 +414,55 @@ export function resolveEscalation(
         type: action === "approved" ? "human.approve" : "human.reject",
         message: `${action === "approved" ? "Approved" : "Rejected"} ${alert.code} on ${truck?.unit ?? alert.truckId}${takeOutOfService ? " · truck marked out of service" : ""}.`,
         alertId: alert.id,
+      },
+      ...state.audit,
+    ],
+  };
+}
+
+export function updateWorkOrder(
+  state: DemoState,
+  workOrderId: string,
+  status: WorkOrderStatus,
+  now = new Date().toISOString(),
+): DemoState {
+  const workOrder = state.workOrders.find((item) => item.id === workOrderId);
+  if (!workOrder) return state;
+
+  const workOrders = state.workOrders.map((item) =>
+    item.id === workOrderId ? { ...item, status } : item,
+  );
+  let trucks = state.trucks;
+  if (status === "completed") {
+    const stillOpen = workOrders.some(
+      (item) =>
+        item.truckId === workOrder.truckId && item.status !== "completed" && item.status !== "cancelled",
+    );
+    if (!stillOpen) {
+      trucks = trucks.map((item) =>
+        item.id === workOrder.truckId && (item.status === "shop" || item.status === "oos")
+          ? { ...item, status: "available" }
+          : item,
+      );
+    }
+  } else if (status === "dispatched") {
+    trucks = trucks.map((item) =>
+      item.id === workOrder.truckId && item.status === "available" ? { ...item, status: "shop" } : item,
+    );
+  }
+
+  return {
+    ...state,
+    workOrders,
+    trucks,
+    audit: [
+      {
+        id: makeId("aud"),
+        at: now,
+        actor: "human",
+        type: `wo.${status}`,
+        message: `Work order ${status} · ${workOrder.title}`,
+        alertId: workOrder.alertId,
       },
       ...state.audit,
     ],
