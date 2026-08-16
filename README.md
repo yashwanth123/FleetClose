@@ -8,7 +8,8 @@ Turn the telematics you already pay for into closed work and a 2026 proof file �
 | --- | --- |
 | `/` | 2026 marketing: cameras paid for, work not closed |
 | `/how/` | Plain-language backend + data you need from a fleet |
-| `/dashboard/` | Live ops demo + proof pack (insurance / CSA / shipper) |
+| `/live/` | Real FMCSA USDOT → public violations → same agent |
+| `/dashboard/` | Simulated Heartland demo + proof pack |
 | `/playbook/` | Email, LinkedIn, call open, demo script, objections |
 | `/pilot/` | $3,500 / 30-day / 100-truck request |
 
